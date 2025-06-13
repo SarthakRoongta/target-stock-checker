@@ -1,13 +1,10 @@
 'use client';
 
-import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Amplify } from 'aws-amplify';
-import {
-  Authenticator,
-  useAuthenticator,
-} from '@aws-amplify/ui-react';
+import { Authenticator, useAuthenticator } from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';
+import React, { useEffect } from 'react';
 import Link from 'next/link';
 
 Amplify.configure({
@@ -21,24 +18,20 @@ Amplify.configure({
 
 export default function SignUpPage() {
   const router = useRouter();
-  const { user, authStatus } = useAuthenticator((context) => [
-    context.user,
-    context.authStatus,
-  ]);
+  const { authStatus } = useAuthenticator();
 
   useEffect(() => {
-    if (authStatus === 'authenticated' && user) {
-      router.push('/signin'); // or '/dashboard' if you auto-login
+    // After sign up and auto-login, go to /signin instead of staying logged in
+    if (authStatus === 'authenticated') {
+      router.push('/signin');
     }
-  }, [authStatus, user]);
-
-  if (authStatus === 'authenticated') return null;
+  }, [authStatus, router]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white dark:bg-black px-4">
+    <div className="min-h-screen flex items-center justify-center px-4 bg-white dark:bg-black">
       <Authenticator
+        key="signUp"
         initialState="signUp"
-        loginMechanisms={['username', 'email']}
         signUpAttributes={['email']}
         formFields={{
           signUp: {
