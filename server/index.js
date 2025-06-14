@@ -3,83 +3,107 @@ const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const Product = require('./models/Product');
 const checkStock = require('./utils/checkStock');
+const { CognitoJwtVerifier } = require('aws-jwt-verify');
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Middleware
 app.use(express.json());
 
-// MongoDB connection
+const verifier = CognitoJwtVerifier.create({
+  userPoolId: process.env.AWS_COGNITO_USER_POOL_ID,
+  clientId:   process.env.AWS_COGNITO_USER_POOL_CLIENT_ID,
+  tokenUse:   'access',
+});
+
+async function authMiddleware(req, res, next) {
+  try {
+    const header = req.headers.authorization || '';
+    const token  = header.split(' ')[1] || '';
+    const payload = await verifier.verify(token);
+    req.user = { sub: payload.sub, email: payload.email };
+    next();
+  } catch (err) {
+    console.error('Auth error:', err);
+    res.status(401).json({ error: 'Unauthorized' });
+  }
+}
+
+app.use('/api/products', authMiddleware);
+
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log('Connected to MongoDB'))
-  .catch((err) => console.error('MongoDB connection error:', err));
+  .catch(err => console.error('MongoDB connection error:', err));
 
-// Create a new product URL entry
 app.post('/api/products', async (req, res) => {
   try {
     const { url } = req.body;
-    const newProduct = new Product({ url, inStock: false, lastChecked: new Date() });
-    const savedProduct = await newProduct.save();
-    res.json(savedProduct);
+    const newProduct = new Product({
+      url,
+      inStock:     false,
+      lastChecked: new Date(),
+      userId:      req.user.sub,
+    });
+    const saved = await newProduct.save();
+    res.json(saved);
   } catch (err) {
     console.error('Error creating product:', err.message);
     res.status(500).json({ error: 'Failed to create product.' });
   }
 });
 
-// Get all products
 app.get('/api/products', async (req, res) => {
   try {
-    const products = await Product.find();
+    const filter = { userId: req.user.sub };
+    if (req.query.inStock !== undefined) {
+      filter.inStock = req.query.inStock === 'true';
+    }
+    const products = await Product.find(filter);
     res.json(products);
   } catch (err) {
-    console.error('❌ Error fetching products:', err.message);
+    console.error('Error fetching products:', err.message);
     res.status(500).json({ error: 'Failed to get products.' });
   }
 });
 
-// Manually trigger stock check for a product by ID
 app.post('/api/products/:id/check', async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id);
+    const product = await Product.findOne({
+      _id:    req.params.id,
+      userId: req.user.sub,
+    });
     if (!product) return res.status(404).json({ error: 'Product not found' });
 
     const result = await checkStock(product.url);
+    if (!result) return res.status(500).json({ error: 'Stock check failed' });
 
-    if (result) {
-      product.inStock = result.inStock;
-      product.lastChecked = result.lastChecked;
-      await product.save();
-      res.json(product);
-    } else {
-      res.status(500).json({ error: 'Stock check failed' });
-    }
+    product.inStock     = result.inStock;
+    product.lastChecked = result.lastChecked;
+    await product.save();
+    res.json(product);
   } catch (err) {
     console.error('Error checking stock:', err.message);
     res.status(500).json({ error: 'Failed to check stock.' });
   }
 });
 
-// Start the server
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+app.delete('/api/products/:id', async (req, res) => {
+  try {
+    const deleted = await Product.findOneAndDelete({
+      _id:    req.params.id,
+      userId: req.user.sub,
+    });
+    if (!deleted) return res.status(404).json({ error: 'Product not found' });
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error deleting product:', err.message);
+    res.status(500).json({ error: 'Failed to delete product.' });
+  }
 });
 
-  /*
-  curl -X POST http://localhost:3001/api/products \
-  -H "Content-Type: application/json" \
-  -d '{"url": "https://www.target.com/p/2024-pok-scarlet-violet-s8-5-elite-trainer-box/-/A-93954435#lnk=sametab"}'
-  683bf0e58d12eb85a8fcf379
-curl -X POST http://localhost:3001/api/products/683cfbf0d9c41417250b881c/check
-
-  curl -X POST http://localhost:3001/api/products \
-  -H "Content-Type: application/json" \
-  -d '{"url": "https://www.target.com/p/pok-233-mon-trading-card-game-charizard-ex-super-premium-collection/-/A-91670547#lnk=sametab"}'
-  683cfcaca6af6256f84cbed5
-
-  curl -X POST http://localhost:3001/api/products/683cfcaca6af6256f84cbed5/check
-  */
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+});

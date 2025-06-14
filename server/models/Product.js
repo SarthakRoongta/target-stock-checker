@@ -12,7 +12,11 @@ const productSchema = new mongoose.Schema({
   lastChecked: {
     type: Date,
     default: Date.now,
-  }
+  },
+  userId:{ 
+    type: String,  
+    required: true 
+  },
 });
 
 module.exports = mongoose.model('Product', productSchema);
