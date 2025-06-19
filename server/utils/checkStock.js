@@ -1,4 +1,3 @@
-// utils/checkStock.js
 const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 
@@ -18,7 +17,6 @@ async function checkStock(url) {
     });
     const page = await browser.newPage();
 
-    // set user agent
     await page.setUserAgent(
       'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) ' +
       'AppleWebKit/537.36 (KHTML, like Gecko) ' +
@@ -33,30 +31,24 @@ async function checkStock(url) {
       Object.defineProperty(navigator, 'platform',  { get: () => 'MacIntel' });
     });
 
-    // wait for all network requests to finish
     await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
     await page.evaluate(() => window.scrollBy(0, 400));
     await new Promise(r => setTimeout(r, 1000));
 
-    // save a screenshot for your inspection
     await page.screenshot({ path: 'debug.png', fullPage: true });
 
-    // Evaluate stock on the page
     const inStock = await page.evaluate(() => {
       const text = document.body.innerText;
 
-      // 1) SHIPPING FIRST: look for "Shipping" tile's "Arrives by" 
       if (/Shipping\s*Arrives by/i.test(text)) {
         console.log('Stock check: shipping available');
         return true;
       }
-      // if shipping explicitly not available, treat as OOS
       if (/Shipping\s*Not available/i.test(text)) {
         console.log('Stock check: shipping not available');
         return false;
       }
 
-      // 2) PRIMARY BUTTON: look for the main add-to-cart button
       const mainBtn = document.querySelector('[data-test="add-to-cart-button"]');
       if (mainBtn) {
         const style = window.getComputedStyle(mainBtn);
@@ -71,7 +63,6 @@ async function checkStock(url) {
         return visible && !nativeDisabled && !ariaDisabled && !cssDisabled;
       }
 
-      // 3) FALLBACK TEXT SCAN
       const outOfStock = /out of stock/i.test(text);
       const soldOut    = /sold out/i.test(text);
       console.log('Stock check fallback →', { outOfStock, soldOut });
@@ -90,3 +81,4 @@ async function checkStock(url) {
 }
 
 module.exports = checkStock;
+

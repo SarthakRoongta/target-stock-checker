@@ -1,10 +1,14 @@
-'use client'
-import React from 'react'
-import Navbar from '@/components/Navbar'
-const NAVBAR_HEIGHT = 52
+'use client';
+
+import React from 'react';
+import Navbar from '@/components/Navbar';
+import AmplifyProvider from '@/components/AmplifyProvider';
+
+const NAVBAR_HEIGHT = 52;
 
 export default function NondashboardLayout({ children }: { children: React.ReactNode }) {
   return (
+    <AmplifyProvider>
       <div className="h-full w-full">
         <Navbar />
         <main
@@ -14,5 +18,6 @@ export default function NondashboardLayout({ children }: { children: React.React
           {children}
         </main>
       </div>
-  )
+    </AmplifyProvider>
+  );
 }

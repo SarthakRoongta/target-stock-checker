@@ -1,0 +1,22 @@
+# dependencies
+node_modules/
+
+# builds / caches
+.next/
+dist/
+build/
+coverage/
+.cache/
+.parcel-cache/
+.vitepress/cache
+.yarn/cache
+
+# environment & secrets
+.env*
+aws-exports.js
+awsconfiguration.*
+
+# OS / IDE noise
+.DS_Store
+.vscode/
+server/debug.png
