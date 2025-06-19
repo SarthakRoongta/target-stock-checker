@@ -19,4 +19,3 @@ awsconfiguration.*
 # OS / IDE noise
 .DS_Store
 .vscode/
-server/debug.png

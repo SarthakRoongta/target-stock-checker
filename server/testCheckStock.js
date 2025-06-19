@@ -1,4 +1,3 @@
-// testCheckStock.js
 const checkStock = require('./utils/checkStock');
 
 (async () => {

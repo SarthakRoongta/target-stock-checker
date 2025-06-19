@@ -1,4 +1,3 @@
-
 const express = require('express');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
@@ -128,14 +127,13 @@ async function runStockCheckForAllUsers() {
     console.log(`Checking ${products.length} products for stock…`);
 
     for (const product of products) {
-      const oldStatus = product.inStock;          // ← remember previous value
+      const oldStatus = product.inStock;          
       const result    = await checkStock(product.url);
       if (!result) {
         console.warn(`⚠️  Failed to check ${product.url}`);
         continue;
       }
 
-      // Update record
       product.inStock     = result.inStock;
       product.lastChecked = result.lastChecked;
       await product.save();
