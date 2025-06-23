@@ -9,9 +9,17 @@ import SwiftUI
 
 @main
 struct TargetStockApp: App {
+    init() {
+        BackgroundFetcher.register()
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .onAppear {
+                    NotificationManager.shared.requestAuth()
+                    BackgroundFetcher.schedule()
+                }
         }
     }
 }

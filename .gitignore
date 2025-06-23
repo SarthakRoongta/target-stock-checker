@@ -19,3 +19,4 @@ awsconfiguration.*
 # OS / IDE noise
 .DS_Store
 .vscode/
+.Constants
