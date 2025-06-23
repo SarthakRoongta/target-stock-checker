@@ -19,4 +19,4 @@ awsconfiguration.*
 # OS / IDE noise
 .DS_Store
 .vscode/
-.Constants
+ios/TargetStock/TargetStock/Constants.swift
